@@ -51,7 +51,7 @@
        (const-size 10)))
 
 (def var-name
-  (const-size 4 base-name))
+  (const-size 4 (gen/fmap s/lower-case base-name)))
 
 (def static-vars
   "Generates a set of static variables."
