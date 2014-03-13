@@ -12,4 +12,5 @@
 (enable-console-print!)
 (prn (gen/sample jgen/method-name))
 (prn (gen/sample jgen/class-name))
-(prn (gen/sample jgen/class-gen))
+(doseq [s (gen/sample jgen/class-gen)]
+  (prn s))

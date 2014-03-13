@@ -67,14 +67,35 @@
   [svars]
   (gen/fmap set (gen/vector (private-var svars))))
 
-(def small-non-neg-int
-  (gen/choose 0 100))
+(def small-pos-int
+  (gen/choose 1 100))
 
 (def small-int
   (gen/choose -100 100))
 
+(defn method
+  [svars]
+  (gen/fmap
+   (fn [[m input local]] {:name m, :input (vec input),
+                         :locals local})
+   (gen/tuple method-name
+              (const-size 4 (private-vars svars))
+              (private-vars svars))))
+
+(def statics-and-methods
+  (gen/bind static-vars
+            (fn [svars]
+              (->>
+               (method svars)
+               (gen/vector)
+               (gen/fmap
+                ;; remove methods with same name and same argcount
+                (comp set #(distinct-by (juxt :name (comp count :input)) %)))
+               (gen/tuple (gen/return svars))))))
+
 (def class-gen
-  (gen/fmap (fn [cname] {:name cname
-                        :methods #{}
-                        :static-vars #{}})
-            class-name))
+  (gen/fmap (fn [[cname [statics methods]]] {:name cname
+                        :methods methods
+                        :static-vars statics})
+            (gen/tuple class-name
+                       statics-and-methods)))
