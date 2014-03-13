@@ -49,10 +49,11 @@
 
 (defmethod block-as-html :declare
   [indent [_ vars]]
-  (-> [(indenting indent)]
-      (conj (hilight :reserved "int") " ")
-      (into (s/join ", " vars))
-      (conj ";\n")))
+  (if (seq vars)
+    (-> [(indenting indent)]
+        (conj (hilight :reserved "int") " ")
+        (into (s/join ", " vars))
+        (conj ";\n"))))
 
 (defmethod block-as-html :method
   [indent [_ m-name m-args body]]
@@ -67,10 +68,11 @@
 
 (defmethod block-as-html :statics
   [indent [_ vars]]
-  (-> [(indenting indent)]
-      (conj (hilight :reserved "int") " ")
-      (into vars)
-      (conj ";\n")))
+  (if (seq vars)
+    (-> [(indenting indent)]
+        (conj (hilight :reserved "int") " ")
+        (into vars)
+        (conj ";\n"))))
 
 (defmethod block-as-html :class
   [indent [_ name body]]
