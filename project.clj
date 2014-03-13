@@ -5,6 +5,7 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.6.0-RC1"]
                  [org.clojure/clojurescript "0.0-2173"]
+                 [com.cemerick/clojurescript.test "0.2.2"]
                  [com.cemerick/double-check "0.5.6-SNAPSHOT"]]
   :plugins [[lein-cljsbuild "1.0.2"]]
   :cljsbuild {:builds
@@ -19,6 +20,6 @@
                {:source-paths ["src/cljs"]
                 :compiler {:output-to "out/production/gen-java.js"
                            :output-dir "production"
-                           :optimizations :advanced
+                           :optimizations :simple
                            :pretty-print false
                            :libs [""]}}}})
