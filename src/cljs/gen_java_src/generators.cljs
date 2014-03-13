@@ -4,6 +4,10 @@
             [clojure.string :as s]
             [clojure.set :as cset]))
 
+(defn- vec-contains?
+  [v s]
+  (some #(= s %) v))
+
 (defn distinct-by
   "Returns a lazy sequence of the elements of coll, where elt is dropped if
   (f elt) has already been returned by some other element."
@@ -60,17 +64,17 @@
 
 (def static-vars
   "Generates a set of static variables."
-  (gen/fmap set (gen/vector var-name)))
+  (gen/fmap distinct (gen/vector var-name)))
 
 (defn private-var
   "Generates a set of local variables (for methods only) which doesn't shadow
   the static ones."
   [svars]
-  (gen/such-that #(not (contains? svars %)) var-name))
+  (gen/such-that #(not (vec-contains? svars %)) var-name))
 
 (defn private-vars
   [svars]
-  (gen/fmap set (gen/vector (private-var svars))))
+  (gen/fmap distinct (gen/vector (private-var svars))))
 
 (def small-pos-int
   (gen/choose 1 100))
@@ -81,7 +85,7 @@
 (declare int-expr)
 
 (def comparison-op
-  (gen/one-of #{:= :<= :>= :< :> :!=}))
+  (gen/elements [:= :<= :>= :< :> :!=]))
 
 (defn statement
   [vars avail-met]
@@ -89,27 +93,41 @@
     (gen/tuple iexpr comparison-op iexpr)))
 
 (def operation-op
-  (gen/frequency [[10 :+]
-                  [10 :-]
-                  [10 :*]
-                  [10 :div]
-                  [3 :%]
-                  [1 :xor]
-                  [1 :and]
-                  [1 :ior]
-                  [1 :neg]]))
+  (gen/frequency [[10 (gen/return :+)]
+                  [10 (gen/return :-)]
+                  [10 (gen/return :*)]
+                  [10 (gen/return :div)]
+                  [3 (gen/return :%)]
+                  [1 (gen/return :xor)]
+                  [1 (gen/return :and)]
+                  [1 (gen/return :ior)]
+                  [1 (gen/return :neg)]]))
 
 (defn int-operation
   [vars avail-met]
   (let [iexpr (int-expr vars avail-met)]
-    (gen/tuple iexpr comparison-op iexpr)))
+    (gen/tuple iexpr operation-op iexpr)))
+
+(defn invoke-gen [vars avail-met]
+  ;; TODO
+  (gen/return "TODO: invoke-gen"))
+
+(defn int-expr*
+  [vars avail-met]
+  (fn [size]
+    (if (zero? size)
+      (gen/frequency [[3 small-int]
+                      [(zeroed vars 5) (gen/elements vars)]])
+      (let [new-size (quot size 2)
+            resize (fn [gen] (gen/resize new-size gen))]
+        (gen/frequency [[(zeroed avail-met 1) (resize (invoke-gen vars avail-met))]
+                        [2 (resize (int-operation vars avail-met))]
+                        [3 small-int]
+                        [(zeroed vars 5) (resize (gen/elements vars))]])))))
 
 (defn int-expr
   [vars avail-met]
-  (gen/frequency [[(zeroed avail-met 1) (invoke-gen vars avail-met)]
-                  [2 (int-operation vars avail-met)]
-                  [3 small-int]
-                  [(zeroed vars 5) (gen/one-of vars)]]))
+  (gen/sized (int-expr* vars avail-met)))
 
 (defn ret-expression
   [vars avail-met]
@@ -118,15 +136,17 @@
 
 (defn- gen-method-body
   [mgen]
-  (gen/bind mgen
-            (fn [{:keys [input locals] :as m}]
-              (let [vars (reduce into #{} [input locals])]
-                (->> (gen/tuple (gen/return m) (int-operation vars #{}))
-                     (gen/fmap
-                      (fn [[m i-op]])
-                      (-> (dissoc m :locals)
-                          (assoc :body [[:declare locals]
-                                        [:return i-op]]))))))))
+  (->>
+   (fn [{:keys [input locals] :as m}]
+     (let [vars (distinct (concat input locals))]
+       (->> (gen/tuple (gen/return m) (int-operation vars []))
+            (gen/fmap
+             (fn [k]
+               (let [[m i-op] k]
+                 (-> (dissoc m :locals)
+                     (assoc :body [[:declare locals]
+                                   [:return i-op]]))))))))
+   (gen/bind mgen)))
 
 (defn method
   [svars]
