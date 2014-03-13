@@ -4,6 +4,21 @@
             [clojure.string :as s]
             [clojure.set :as cset]))
 
+(defn distinct-by
+  "Returns a lazy sequence of the elements of coll, where elt is dropped if
+  (f elt) has already been returned by some other element."
+  [f coll]
+    (let [step (fn step [xs seen]
+                   (lazy-seq
+                    ((fn [[x :as xs] seen]
+                       (when-let [s (seq xs)]
+                         (let [f-res (f x)]
+                           (if (contains? seen f-res)
+                             (recur (rest s) seen)
+                             (cons x (step (rest s) (conj seen f-res)))))))
+                     xs seen)))]
+      (step coll #{})))
+
 (def char-alpha
   "Generate alphabetic characters."
   (gen/fmap cljs.core/char
