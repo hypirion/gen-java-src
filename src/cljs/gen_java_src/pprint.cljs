@@ -57,20 +57,25 @@
 
 (defmethod block-as-html :method
   [indent [_ m-name m-args body]]
-  (-> [(indenting indent)]
-      (conj (hilight :method m-name) "(")
+  (-> ["\n" (indenting indent)]
+      (conj (hilight :reserved "public") " "
+            (hilight :reserved "static") " "
+            (hilight :reserved "int") " "
+            (hilight :method m-name) "(")
       (into (butlast
              (interleave (repeat (hilight :reserved "int"))
                          (repeat " ") m-args (repeat ", "))))
       (conj ") {\n")
       (into (mapcat #(block-as-html (inc indent) %) body))
-      (conj (first (indenting indent)) "}\n")))
+      (conj (indenting indent) "}\n")))
 
 (defmethod block-as-html :statics
   [indent [_ vars]]
   (if (seq vars)
     (-> [(indenting indent)]
-        (conj (hilight :reserved "int") " ")
+        (conj (hilight :reserved "public") " "
+              (hilight :reserved "static") " "
+              (hilight :reserved "int") " ")
         (into vars)
         (conj ";\n"))))
 
