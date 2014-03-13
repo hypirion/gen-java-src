@@ -90,7 +90,7 @@
 (defn statement
   [vars avail-met]
   (let [iexpr (int-expr vars avail-met)]
-    (gen/tuple iexpr comparison-op iexpr)))
+    (gen/tuple (gen/return :compare) comparison-op iexpr iexpr)))
 
 (def operation-op
   (gen/frequency [[10 (gen/return :+)]
@@ -106,7 +106,7 @@
 (defn int-operation
   [vars avail-met]
   (let [iexpr (int-expr vars avail-met)]
-    (gen/tuple iexpr operation-op iexpr)))
+    (gen/tuple (gen/return :int-op) operation-op iexpr iexpr)))
 
 (defn invoke-gen [vars avail-met]
   ;; TODO
@@ -117,13 +117,14 @@
   (fn [size]
     (if (zero? size)
       (gen/frequency [[3 small-int]
-                      [(zeroed vars 5) (gen/elements vars)]])
+                      [(zeroed vars 5) (if (seq vars) (gen/elements vars))]])
       (let [new-size (quot size 2)
             resize (fn [gen] (gen/resize new-size gen))]
         (gen/frequency [[(zeroed avail-met 1) (resize (invoke-gen vars avail-met))]
                         [2 (resize (int-operation vars avail-met))]
                         [3 small-int]
-                        [(zeroed vars 5) (resize (gen/elements vars))]])))))
+                        [(zeroed vars 5) (if (seq vars)
+                                           (resize (gen/elements vars)))]])))))
 
 (defn int-expr
   [vars avail-met]
@@ -137,15 +138,14 @@
 (defn- gen-method-body
   [mgen]
   (->>
-   (fn [{:keys [input locals] :as m}]
+   (fn [{:keys [name input locals] :as m}]
      (let [vars (distinct (concat input locals))]
        (->> (gen/tuple (gen/return m) (int-operation vars []))
             (gen/fmap
              (fn [k]
                (let [[m i-op] k]
-                 (-> (dissoc m :locals)
-                     (assoc :body [[:declare locals]
-                                   [:return i-op]]))))))))
+                 [:method name input [[:declare locals]
+                                      [:return i-op]]]))))))
    (gen/bind mgen)))
 
 (defn method
@@ -171,8 +171,9 @@
                (gen/tuple (gen/return svars))))))
 
 (def class-gen
-  (gen/fmap (fn [[cname [statics methods]]] {:name cname
-                        :methods methods
-                        :static-vars statics})
+  (gen/fmap (fn [[cname [statics methods]]]
+              [:class cname
+               (concat [(into [:statics] statics)]
+                       methods)])
             (gen/tuple class-name
                        statics-and-methods)))
