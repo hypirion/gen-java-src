@@ -100,8 +100,7 @@
                   [3 (gen/return :%)]
                   [1 (gen/return :xor)]
                   [1 (gen/return :and)]
-                  [1 (gen/return :ior)]
-                  [1 (gen/return :neg)]]))
+                  [1 (gen/return :ior)]]))
 
 (defn int-operation
   [vars avail-met]

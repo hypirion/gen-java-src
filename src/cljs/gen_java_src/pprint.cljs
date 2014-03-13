@@ -29,7 +29,7 @@
 
 (def int-op
   {:+ "+" :- "-" :* "*" :div "/" :% "%"
-   :xor "^" :and "&" :ior "|" :neg "~"})
+   :xor "^" :and "&" :ior "|"})
 
 (defmethod as-html :int-op
   [[_ op left right]]
