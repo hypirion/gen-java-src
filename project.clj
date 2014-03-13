@@ -7,7 +7,8 @@
                  [org.clojure/clojurescript "0.0-2173"]
                  [com.cemerick/clojurescript.test "0.2.2"]
                  [com.cemerick/double-check "0.5.6-SNAPSHOT"]
-                 [hiccups "0.3.0"]]
+                 [hiccups "0.3.0"]
+                 [domina "1.0.2"]]
   :plugins [[lein-cljsbuild "1.0.2"]]
   :cljsbuild {:builds
               {:development
