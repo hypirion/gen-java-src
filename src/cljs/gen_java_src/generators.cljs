@@ -166,7 +166,7 @@
                (gen/vector)
                (gen/fmap
                 ;; remove methods with same name and same arity
-                #(distinct-by (juxt :name (comp count :input)) %))
+                #(distinct-by (juxt first (comp count second)) %))
                (gen/tuple (gen/return svars))))))
 
 (def class-gen
