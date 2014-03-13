@@ -73,14 +73,67 @@
 (def small-int
   (gen/choose -100 100))
 
+(declare int-expr)
+
+(def comparison-op
+  (gen/one-of #{:= :<= :>= :< :> :!=}))
+
+(defn statement
+  [vars avail-met]
+  (let [iexpr (int-expr vars avail-met)]
+    (gen/tuple iexpr comparison-op iexpr)))
+
+(def operation-op
+  (gen/frequency [[10 :+]
+                  [10 :-]
+                  [10 :*]
+                  [10 :div]
+                  [3 :%]
+                  [1 :xor]
+                  [1 :and]
+                  [1 :ior]
+                  [1 :neg]]))
+
+(defn int-operation
+  [vars avail-met]
+  (let [iexpr (int-expr vars avail-met)]
+    (gen/tuple iexpr comparison-op iexpr)))
+
+(defn int-expr
+  [vars avail-met]
+  (gen/frequency [;; TODO: invoke-gen may have nothing to invoke on.
+                  ;; [1 (invoke-gen vars avail-met)]
+                  [2 (int-operation vars avail-met)]
+                  [3 small-int]
+                  [5 (gen/one-of (conj vars 1))]])) ;; as vars could be empty
+
+(defn ret-expression
+  [vars avail-met]
+  (gen/fmap (fn [expr] [:return expr])
+            (int-expr vars avail-met)))
+
+(defn- gen-method-body
+  [mgen]
+  (gen/bind mgen
+            (fn [{:keys [input locals] :as m}]
+              (let [vars (reduce into #{} [input locals])]
+                (->> (gen/tuple (gen/return m) (int-operation vars #{}))
+                     (gen/fmap
+                      (fn [[m i-op]])
+                      (-> (dissoc m :locals)
+                          (assoc :body [[:declare locals]
+                                        [:return i-op]]))))))))
+
 (defn method
   [svars]
-  (gen/fmap
-   (fn [[m input local]] {:name m, :input (vec input),
-                         :locals local})
+  (->>
    (gen/tuple method-name
               (const-size 4 (private-vars svars))
-              (private-vars svars))))
+              (private-vars svars))
+   (gen/fmap (fn [[m input local]]
+               {:name m, :input (vec input),
+                :locals local}))
+   gen-method-body))
 
 (def statics-and-methods
   (gen/bind static-vars
@@ -89,8 +142,8 @@
                (method svars)
                (gen/vector)
                (gen/fmap
-                ;; remove methods with same name and same argcount
-                (comp set #(distinct-by (juxt :name (comp count :input)) %)))
+                ;; remove methods with same name and same arity
+                #(distinct-by (juxt :name (comp count :input)) %))
                (gen/tuple (gen/return svars))))))
 
 (def class-gen
