@@ -6,7 +6,8 @@
   :dependencies [[org.clojure/clojure "1.6.0-RC1"]
                  [org.clojure/clojurescript "0.0-2173"]
                  [com.cemerick/clojurescript.test "0.2.2"]
-                 [com.cemerick/double-check "0.5.6-SNAPSHOT"]]
+                 [com.cemerick/double-check "0.5.6-SNAPSHOT"]
+                 [hiccups "0.3.0"]]
   :plugins [[lein-cljsbuild "1.0.2"]]
   :cljsbuild {:builds
               {:development
