@@ -19,6 +19,11 @@
                      xs seen)))]
       (step coll #{})))
 
+(defn- zeroed
+  "If (seq m) is nil, return 0, else n."
+  [m n]
+  (if (seq m) n 0))
+
 (def char-alpha
   "Generate alphabetic characters."
   (gen/fmap cljs.core/char
@@ -101,11 +106,10 @@
 
 (defn int-expr
   [vars avail-met]
-  (gen/frequency [;; TODO: invoke-gen may have nothing to invoke on.
-                  ;; [1 (invoke-gen vars avail-met)]
+  (gen/frequency [[(zeroed avail-met 1) (invoke-gen vars avail-met)]
                   [2 (int-operation vars avail-met)]
                   [3 small-int]
-                  [5 (gen/one-of (conj vars 1))]])) ;; as vars could be empty
+                  [(zeroed vars 5) (gen/one-of vars)]]))
 
 (defn ret-expression
   [vars avail-met]
