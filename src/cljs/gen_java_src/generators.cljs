@@ -4,6 +4,12 @@
             [clojure.string :as s]
             [clojure.set :as cset]))
 
+(defn maplist
+  [f s]
+  (if-let [s (seq s)]
+    (lazy-seq (cons (f s)
+                    (maplist f (next s))))))
+
 (defn- vec-contains?
   [v s]
   (some #(= s %) v))
@@ -108,8 +114,16 @@
     (gen/tuple (gen/return :int-op) operation-op iexpr iexpr)))
 
 (defn invoke-gen [vars avail-met]
-  ;; TODO
-  (gen/return "TODO: invoke-gen"))
+  (if (seq avail-met)
+    (gen/bind
+     (gen/elements avail-met)
+     (fn [m]
+       (let [i-ex (int-expr vars avail-met)]
+         (->>
+          (apply gen/tuple (gen/return (:name m))
+                 (repeat (count (:input m)) i-ex))
+          (gen/fmap #(let [r (into [:invoke] %)] (prn r) r))))))
+    (gen/return "Called invoke-gen even though that should be impossible.")))
 
 (defn int-expr*
   [vars avail-met]
@@ -134,18 +148,23 @@
   (gen/fmap (fn [expr] [:return expr])
             (int-expr vars avail-met)))
 
-(defn- gen-method-body
-  [mgen]
-  (->>
-   (fn [{:keys [name input locals] :as m}]
-     (let [vars (distinct (concat input locals))]
-       (->> (gen/tuple (gen/return m) (int-operation vars []))
-            (gen/fmap
-             (fn [k]
-               (let [[m i-op] k]
-                 [:method name input [[:declare locals]
-                                      [:return i-op]]]))))))
-   (gen/bind mgen)))
+(defn- gen-method-bodies
+  [method-vec]
+  (gen/bind
+   method-vec
+   (fn [method-vec]
+     (->> method-vec
+          (maplist
+           (fn [[{:keys [name input locals] :as m} & rmethods]]
+             (let [vars (distinct (concat input locals))]
+               (->> (gen/tuple (gen/return m)
+                               (int-operation vars rmethods))
+                    (gen/fmap
+                     (fn [k]
+                       (let [[m i-op] k]
+                         [:method name input [[:declare locals]
+                                              [:return i-op]]])))))))
+          (apply gen/tuple)))))
 
 (defn method
   [svars]
@@ -155,8 +174,7 @@
               (private-vars svars))
    (gen/fmap (fn [[m input local]]
                {:name m, :input (vec input),
-                :locals local}))
-   gen-method-body))
+                :locals local}))))
 
 (def statics-and-methods
   (gen/bind static-vars
@@ -167,6 +185,7 @@
                (gen/fmap
                 ;; remove methods with same name and same arity
                 #(distinct-by (juxt first (comp count second)) %))
+               gen-method-bodies
                (gen/tuple (gen/return svars))))))
 
 (def class-gen
