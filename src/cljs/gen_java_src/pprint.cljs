@@ -46,6 +46,12 @@
       (into (as-html right))
       (conj ")")))
 
+(defmethod as-html :invoke
+  [[_ mname & args]]
+  (-> [(hilight :invoke mname) "("]
+      (into (butlast (mapcat #(conj (as-html %) ", ") args)))
+      (conj ")")))
+
 (defmulti block-as-html (fn [_ [x]] x))
 
 (defmethod block-as-html :return
