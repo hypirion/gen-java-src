@@ -12,12 +12,19 @@
 (defn- hilight [type value]
   [:span {:class type} value])
 
+(def ^:private public* (hilight :kw "public"))
+(def ^:private static* (hilight :kw "static"))
+(def ^:private int* (hilight :type "int"))
+(def ^:private return* (hilight :kw "return"))
+
 (defmulti ^:private as-html
   #(try (first %) (catch js/Error e :default)))
 
 (defmethod as-html :default
   [ast]
-  [ast])
+  (if (number? ast)
+    [(hilight :number ast)]
+    [ast]))
 
 (defmethod as-html :compare
   [[_ op left right]]
@@ -43,7 +50,7 @@
 
 (defmethod block-as-html :return
   [indent [_ ast]]
-  (-> [(indenting indent) (hilight :reserved "return") " "]
+  (-> [(indenting indent) return* " "]
       (into (as-html ast))
       (conj ";\n")))
 
@@ -51,20 +58,18 @@
   [indent [_ vars]]
   (if (seq vars)
     (-> [(indenting indent)]
-        (conj (hilight :reserved "int") " ")
+        (conj int* " ")
         (into (s/join ", " vars))
         (conj ";\n"))))
 
 (defmethod block-as-html :method
   [indent [_ m-name m-args body]]
   (-> ["\n" (indenting indent)]
-      (conj (hilight :reserved "public") " "
-            (hilight :reserved "static") " "
-            (hilight :reserved "int") " "
-            (hilight :method m-name) "(")
+      (conj public* " " static* " "
+            int* " " (hilight :method m-name) "(")
       (into (butlast
-             (interleave (repeat (hilight :reserved "int"))
-                         (repeat " ") m-args (repeat ", "))))
+             (interleave (repeat int*) (repeat " ")
+                         m-args (repeat ", "))))
       (conj ") {\n")
       (into (mapcat #(block-as-html (inc indent) %) body))
       (conj (indenting indent) "}\n")))
@@ -73,16 +78,16 @@
   [indent [_ vars]]
   (if (seq vars)
     (-> [(indenting indent)]
-        (conj (hilight :reserved "public") " "
-              (hilight :reserved "static") " "
-              (hilight :reserved "int") " ")
+        (conj public* " "
+              static* " "
+              int*    " ")
         (into vars)
         (conj ";\n"))))
 
 (defmethod block-as-html :class
   [indent [_ name body]]
   (-> [(indenting indent)]
-      (conj (hilight :reserved "public class") " " name " {\n")
+      (conj public* " " (hilight :classname name) " {\n")
       (into (mapcat #(block-as-html (inc indent) %) body))
       (conj (indenting indent) "}\n")))
 
