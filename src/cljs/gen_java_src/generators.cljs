@@ -122,7 +122,7 @@
          (->>
           (apply gen/tuple (gen/return (:name m))
                  (repeat (count (:input m)) i-ex))
-          (gen/fmap #(let [r (into [:invoke] %)] (prn r) r))))))
+          (gen/fmap #(into [:invoke] %))))))
     (gen/return "Called invoke-gen even though that should be impossible.")))
 
 (defn int-expr*
