@@ -91,7 +91,7 @@
 (declare int-expr)
 
 (def comparison-op
-  (gen/elements [:= :<= :>= :< :> :!=]))
+  (gen/elements [:== :<= :>= :< :> :!=]))
 
 (defn gen-comparison
   [vars avail-met]
