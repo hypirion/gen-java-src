@@ -22,6 +22,6 @@
                {:source-paths ["src/cljs"]
                 :compiler {:output-to "out/production/gen-java.js"
                            :output-dir "production"
-                           :optimizations :simple
+                           :optimizations :advanced
                            :pretty-print false
                            :libs [""]}}}})
