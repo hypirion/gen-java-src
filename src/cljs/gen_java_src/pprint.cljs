@@ -106,9 +106,12 @@
         (into (as-html expr))
         (conj " {\n")
         (into (mapcat #(block-as-html (inc indent) %) true-block))
-        (conj spacing "}\n" spacing else* " {\n")
-        (into (mapcat #(block-as-html (inc indent) %) false-block))
-        (conj spacing "}\n"))))
+        (conj spacing "}\n")
+        (cond->
+         (seq false-block)
+         (-> (conj spacing else* " {\n")
+             (into (mapcat #(block-as-html (inc indent) %) false-block))
+             (conj spacing "}\n"))))))
 
 (defn htmlify
   "This is probably not idiomatic."
