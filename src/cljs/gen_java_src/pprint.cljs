@@ -97,6 +97,13 @@
       (into (mapcat #(block-as-html (inc indent) %) body))
       (conj (indenting indent) "}\n")))
 
+(defmethod block-as-html :assignment
+  [indent [_ var swap-op ast-expr]]
+  (-> [(indenting indent)]
+      (conj var " " (str (int-op swap-op) "=") " ")
+      (into (as-html ast-expr))
+      (conj ";\n")))
+
 (defn htmlify
   "This is probably not idiomatic."
   [class-ast]

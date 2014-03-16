@@ -131,7 +131,7 @@
     (if (zero? size)
       (gen/frequency [[3 small-int]
                       [(zeroed vars 5) (if (seq vars) (gen/elements vars))]])
-      (let [new-size (quot size 2)
+      (let [new-size (int (quot size 1.5))
             resize (fn [gen] (gen/resize new-size gen))]
         (gen/frequency [[(zeroed avail-met 1) (resize (invoke-gen vars avail-met))]
                         [2 (resize (int-operation vars avail-met))]
@@ -148,23 +148,46 @@
   (gen/fmap (fn [expr] [:return expr])
             (int-expr vars avail-met)))
 
+(defn gen-assignment
+  [vars rmethods]
+  (->>
+   (gen/tuple (gen/elements vars)
+              (gen/frequency [[5 (gen/return :=)]
+                              [1 operation-op]])
+              (int-expr vars rmethods))
+   (gen/fmap
+     (fn [vals]
+       (into [:assignment] vals)))))
+
+(defn gen-statement
+  [vars rmethods]
+  (gen/frequency [[1 (gen-assignment vars rmethods)]]))
+
+(defn gen-statements
+  [vars rmethods]
+  (if (seq vars)
+    (gen/vector (gen-statement vars rmethods))
+    (gen/return [])))
+
 (defn- gen-method-bodies
   [method-vec]
-  (gen/bind
-   method-vec
+  (->>
    (fn [method-vec]
      (->> method-vec
           (maplist
            (fn [[{:keys [name input locals] :as m} & rmethods]]
              (let [vars (distinct (concat input locals))]
                (->> (gen/tuple (gen/return m)
-                               (int-operation vars rmethods))
+                               (gen-statements vars rmethods)
+                               (ret-expression vars rmethods))
                     (gen/fmap
-                     (fn [k]
-                       (let [[m i-op] k]
-                         [:method name input [[:declare locals]
-                                              [:return i-op]]])))))))
-          (apply gen/tuple)))))
+                     (fn [[m statements ret]]
+                       [:method name input
+                        (-> [[:declare locals]]
+                            (into statements)
+                            (conj ret))]))))))
+          (apply gen/tuple)))
+   (gen/bind method-vec)))
 
 (defn method
   [svars]
