@@ -164,19 +164,21 @@
 (defn gen-if
   [vars rmethods]
   (fn [size]
-    (let [new-size (int (quot size 1.5))
+    (let [new-size (max 1 (int (quot size 1.5)))
           gen-stat (gen/resize new-size (gen-statements vars rmethods))]
       (->>
-       (gen/tuple (gen-comparison vars rmethods) gen-stat gen-stat)
+       (gen/tuple (gen-comparison vars rmethods)
+                  (gen/not-empty gen-stat)
+                  gen-stat)
        (gen/fmap (fn [vals] (into [:if] vals)))))))
 
 (defn gen-for
   [vars rmethods]
   (fn [size]
-    (let [new-size (int (quot size 1.5))
+    (let [new-size (max 1 (int (quot size 1.5)))
           gen-stat (gen/resize new-size (gen-statements vars rmethods))]
       (->>
-       (gen/tuple (private-var vars) small-pos-int gen-stat)
+       (gen/tuple (private-var vars) small-pos-int (gen/not-empty gen-stat))
        (gen/fmap (fn [vals] (into [:for] vals)))))))
 
 (defn gen-statement
