@@ -93,7 +93,7 @@
 (def comparison-op
   (gen/elements [:= :<= :>= :< :> :!=]))
 
-(defn statement
+(defn gen-comparison
   [vars avail-met]
   (let [iexpr (int-expr vars avail-met)]
     (gen/tuple (gen/return :compare) comparison-op iexpr iexpr)))
@@ -159,9 +159,21 @@
      (fn [vals]
        (into [:assignment] vals)))))
 
+(declare gen-statements)
+
+(defn gen-if
+  [vars rmethods]
+  (fn [size]
+    (let [new-size (int (quot size 1.5))
+          gen-stat (gen/resize new-size (gen-statements vars rmethods))]
+      (->>
+       (gen/tuple (gen-comparison vars rmethods) gen-stat gen-stat)
+       (gen/fmap (fn [vals] (into [:if] vals)))))))
+
 (defn gen-statement
   [vars rmethods]
-  (gen/frequency [[1 (gen-assignment vars rmethods)]]))
+  (gen/frequency [[5 (gen-assignment vars rmethods)]
+                  [1 (gen/sized (gen-if vars rmethods))]]))
 
 (defn gen-statements
   [vars rmethods]
