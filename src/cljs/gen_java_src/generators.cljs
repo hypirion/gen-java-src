@@ -187,8 +187,8 @@
    (fn [method-vec]
      (->> method-vec
           (maplist
-           (fn [[{:keys [name input locals] :as m} & rmethods]]
-             (let [vars (distinct (concat input locals))]
+           (fn [[{:keys [name input locals statics] :as m} & rmethods]]
+             (let [vars (distinct (concat input locals statics))]
                (->> (gen/tuple (gen/return m)
                                (gen-statements vars rmethods)
                                (ret-expression vars rmethods))
@@ -209,7 +209,7 @@
               (private-vars svars))
    (gen/fmap (fn [[m input local]]
                {:name m, :input (vec input),
-                :locals local}))))
+                :locals local, :statics svars}))))
 
 (def statics-and-methods
   (gen/bind static-vars
