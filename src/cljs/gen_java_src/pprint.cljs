@@ -65,10 +65,7 @@
 (defmethod block-as-html :declare
   [indent [_ vars]]
   (if (seq vars)
-    (-> [(indenting indent)]
-        (conj int* " ")
-        (into (s/join ", " vars))
-        (conj ";\n"))))
+    [(indenting indent) int* " " (s/join ", " vars) ";\n"]))
 
 (defmethod block-as-html :method
   [indent [_ m-name m-args body]]
@@ -83,14 +80,10 @@
       (conj (indenting indent) "}\n")))
 
 (defmethod block-as-html :statics
-  [indent [_ vars]]
+  [indent [_ & vars]]
   (if (seq vars)
-    (-> [(indenting indent)]
-        (conj public* " "
-              static* " "
-              int*    " ")
-        (into vars)
-        (conj ";\n"))))
+    [(indenting indent) public* " " static* " " int* " "
+     (s/join ", " vars) ";\n"]))
 
 (defmethod block-as-html :class
   [indent [_ name body]]
