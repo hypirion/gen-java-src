@@ -170,10 +170,20 @@
        (gen/tuple (gen-comparison vars rmethods) gen-stat gen-stat)
        (gen/fmap (fn [vals] (into [:if] vals)))))))
 
+(defn gen-for
+  [vars rmethods]
+  (fn [size]
+    (let [new-size (int (quot size 1.5))
+          gen-stat (gen/resize new-size (gen-statements vars rmethods))]
+      (->>
+       (gen/tuple (private-var vars) small-pos-int gen-stat)
+       (gen/fmap (fn [vals] (into [:for] vals)))))))
+
 (defn gen-statement
   [vars rmethods]
-  (gen/frequency [[5 (gen-assignment vars rmethods)]
-                  [1 (gen/sized (gen-if vars rmethods))]]))
+  (gen/frequency [[20 (gen-assignment vars rmethods)]
+                  [4 (gen/sized (gen-if vars rmethods))]
+                  [1 (gen/sized (gen-for vars rmethods))]]))
 
 (defn gen-statements
   [vars rmethods]

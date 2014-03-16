@@ -18,6 +18,8 @@
 (def ^:private return* (hilight :kw "return"))
 (def ^:private if* (hilight :kw "if"))
 (def ^:private else* (hilight :kw "else"))
+(def ^:private for* (hilight :kw "for"))
+
 
 (defmulti ^:private as-html
   #(try (first %) (catch js/Error e :default)))
@@ -112,6 +114,14 @@
          (-> (conj spacing else* " {\n")
              (into (mapcat #(block-as-html (inc indent) %) false-block))
              (conj spacing "}\n"))))))
+
+(defmethod block-as-html :for
+  [indent [_ var upto block]]
+  (let [spacing (indenting indent)]
+    (-> [spacing for* " (" int* " " var " = " (hilight :number "0") "; "
+         var " < " upto "; " var "++){\n"]
+        (into (mapcat #(block-as-html (inc indent) %) block))
+        (conj spacing "}\n"))))
 
 (defn htmlify
   "This is probably not idiomatic."
