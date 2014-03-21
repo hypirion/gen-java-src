@@ -13,6 +13,7 @@
   [:span {:class type} value])
 
 (def ^:private public* (hilight :kw "public"))
+(def ^:private class* (hilight :kw "class"))
 (def ^:private static* (hilight :kw "static"))
 (def ^:private int* (hilight :type "int"))
 (def ^:private return* (hilight :kw "return"))
@@ -90,7 +91,7 @@
 (defmethod block-as-html :class
   [indent [_ name body]]
   (-> [(indenting indent)]
-      (conj public* " " (hilight :classname name) " {\n")
+      (conj public* " " class* " " (hilight :classname name) " {\n")
       (into (mapcat #(block-as-html (inc indent) %) body))
       (conj (indenting indent) "}\n")))
 
